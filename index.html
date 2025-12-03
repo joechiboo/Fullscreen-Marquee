@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>全螢幕跑馬燈</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #000;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .controls {
+      padding: 15px;
+      background: #111;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .controls input[type="text"] {
+      flex: 1;
+      min-width: 200px;
+      padding: 10px 15px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      background: #222;
+      color: #fff;
+    }
+
+    .controls input[type="color"] {
+      width: 50px;
+      height: 40px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .controls input[type="range"] {
+      width: 100px;
+    }
+
+    .controls button {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #0066ff;
+      color: #fff;
+      font-weight: bold;
+    }
+
+    .controls button:hover { background: #0055dd; }
+    .controls label { color: #888; font-size: 14px; }
+
+    .marquee-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .marquee-text {
+      white-space: nowrap;
+      font-weight: bold;
+      position: absolute;
+      animation: scroll linear infinite;
+    }
+
+    @keyframes scroll {
+      0% { transform: translateX(100vw); }
+      100% { transform: translateX(-100%); }
+    }
+
+    .fullscreen-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 10px 15px;
+      background: rgba(255,255,255,0.2);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .fullscreen-btn:hover { background: rgba(255,255,255,0.3); }
+
+    body.fullscreen .controls { display: none; }
+    body.fullscreen .fullscreen-btn { display: none; }
+
+    .exit-hint {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 14px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+  <div class="controls">
+    <input type="text" id="textInput" value="歡迎光臨！" placeholder="輸入要顯示的文字">
+    <label>文字色</label>
+    <input type="color" id="textColor" value="#ffff00">
+    <label>背景色</label>
+    <input type="color" id="bgColor" value="#000000">
+    <label>速度</label>
+    <input type="range" id="speed" min="5" max="60" value="20">
+    <label>大小</label>
+    <input type="range" id="fontSize" min="50" max="400" value="150">
+    <button onclick="applySettings()">套用</button>
+  </div>
+
+  <div class="marquee-container" id="container">
+    <div class="marquee-text" id="marquee">歡迎光臨！</div>
+  </div>
+
+  <button class="fullscreen-btn" onclick="toggleFullscreen()">🔲 全螢幕 (雙擊畫面)</button>
+  <div class="exit-hint" id="exitHint">點一下退出全螢幕</div>
+
+  <script>
+    const marquee = document.getElementById('marquee');
+    const container = document.getElementById('container');
+    const exitHint = document.getElementById('exitHint');
+    let tapTimeout = null;
+    let lastTap = 0;
+
+    // 處理點擊：雙擊進入全螢幕，單擊退出
+    container.addEventListener('click', (e) => {
+      const now = Date.now();
+      const timeDiff = now - lastTap;
+      lastTap = now;
+
+      if (timeDiff < 300 && timeDiff > 0) {
+        // 雙擊 - 進入全螢幕
+        clearTimeout(tapTimeout);
+        if (!document.fullscreenElement) {
+          enterFullscreen();
+        }
+      } else {
+        // 單擊 - 延遲判斷，如果在全螢幕則退出
+        tapTimeout = setTimeout(() => {
+          if (document.fullscreenElement) {
+            exitFullscreen();
+          }
+        }, 300);
+      }
+    });
+
+    function enterFullscreen() {
+      document.documentElement.requestFullscreen().catch(() => {
+        // iOS 不支援，用偽全螢幕
+        document.body.classList.add('fullscreen');
+      });
+      document.body.classList.add('fullscreen');
+      showExitHint();
+    }
+
+    function exitFullscreen() {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      }
+      document.body.classList.remove('fullscreen');
+    }
+
+    function showExitHint() {
+      exitHint.style.opacity = '1';
+      setTimeout(() => {
+        exitHint.style.opacity = '0';
+      }, 2000);
+    }
+
+    function applySettings() {
+      const text = document.getElementById('textInput').value || '跑馬燈';
+      const textColor = document.getElementById('textColor').value;
+      const bgColor = document.getElementById('bgColor').value;
+      const speed = document.getElementById('speed').value;
+      const fontSize = document.getElementById('fontSize').value;
+
+      marquee.textContent = text;
+      marquee.style.color = textColor;
+      marquee.style.fontSize = fontSize + 'px';
+      marquee.style.animationDuration = speed + 's';
+      container.style.background = bgColor;
+      document.body.style.background = bgColor;
+    }
+
+    document.addEventListener('fullscreenchange', () => {
+      if (!document.fullscreenElement) {
+        document.body.classList.remove('fullscreen');
+      }
+    });
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        enterFullscreen();
+      } else {
+        exitFullscreen();
+      }
+    }
+
+    applySettings();
+  </script>
+</body>
+</html>
