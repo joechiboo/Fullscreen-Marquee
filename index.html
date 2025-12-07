@@ -126,7 +126,7 @@
     <label>背景色</label>
     <input type="color" id="bgColor" value="#000000">
     <label>速度</label>
-    <input type="range" id="speed" min="5" max="60" value="20">
+    <input type="range" id="speed" min="1" max="60" value="10">
     <label>大小</label>
     <input type="range" id="fontSize" min="50" max="400" value="150">
     <button onclick="applySettings()">套用</button>
@@ -201,7 +201,11 @@
       marquee.textContent = text;
       marquee.style.color = textColor;
       marquee.style.fontSize = fontSize + 'px';
-      marquee.style.animationDuration = speed + 's';
+
+      // 根據文字大小調整速度：文字越大，時間越短（越快）
+      const adjustedSpeed = speed * (150 / fontSize);
+      marquee.style.animationDuration = adjustedSpeed + 's';
+
       container.style.background = bgColor;
       document.body.style.background = bgColor;
     }
